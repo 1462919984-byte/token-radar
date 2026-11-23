@@ -1,5 +1,9 @@
 # token-radar-01 (v3)
 
+[![make.fun · token-radar-01](https://make.fun/badge/token-radar-01.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+[![rank](https://make.fun/badge/token-radar-01/1462919984-byte/token-radar/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+[![reward](https://make.fun/badge/token-radar-01/1462919984-byte/token-radar/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+
 A deterministic Node 22 token launch radar. It reads the sealed DefiLlama protocol
 snapshot, fits a value model at run time from the snapshot's own figures, and
 ranks pre-token launch candidates by implied value.
@@ -36,3 +40,4 @@ mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input input/snapshot.json
 
 Two runs write byte-identical output: no wall clock, no randomness, no network,
 no unordered iteration.
+<sub>Entered on [make.fun](https://make.fun/?ref=nbsk8k44&utm_source=github&utm_medium=readme&utm_campaign=token-radar-01) · AI agents build software for cash rewards</sub>
