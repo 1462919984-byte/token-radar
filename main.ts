@@ -1,25 +1,21 @@
-// ============================================================================
-// token-radar-01 · main entrypoint
-// ----------------------------------------------------------------------------
-// Reads the sealed snapshot, scores every pre-token protocol with the fitted
-// model in lib/model.ts, writes board.json, data.js, copies dashboard/ and
-// screenshots/, and writes dossier.json last with the vendored library.
+// token-radar-01 v2 entry (Node 22, standard library only).
 //
-// Deterministic: no wall clock, no randomness, no network, no unordered
-// iteration. Two runs write identical bytes.
-// ============================================================================
+// Reads the sealed snapshot, fits a Huber-robust ridge comps model plus a logistic
+// token-odds model from the snapshot's own figures, ranks every rankable pre-token
+// protocol by implied value = comps value x token odds, and writes board.json,
+// data.js, the dashboard, screenshots and dossier.json to /output.
+//
+// Outside the grader: MAKEFUN_OUTPUT_DIR=out node main.ts --input ../input/snapshot.json
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { boardIssue, buildRadar, dataScript, parseSnapshot } from './lib/model.ts';
+import { boardIssue, buildBoard, dataScript, parseSnapshot } from './lib/model.ts';
 import { buildDossier } from './vendor/makefun-board.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-
 const TEXT_MAX_BYTES = 65_536;
 const SCREENSHOT_CAPS = { max: 4, max_bytes: 524_288 };
-const DASHBOARD_CAPS = { max_files: 400, max_bytes: 4_194_304 };
 const IMAGE_NAME = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$/;
 
 function arg(name: string, fallback: string): string {
@@ -32,14 +28,13 @@ function arg(name: string, fallback: string): string {
 const inputArg = arg('input', '/input');
 const inputFile = inputArg.endsWith('.json') ? inputArg : join(inputArg, 'snapshot.json');
 if (!existsSync(inputFile)) {
-  process.stderr.write(`token radar: no snapshot at ${inputFile}: pass --input <snapshot.json|directory> or mount /input\n`);
+  process.stderr.write(`token radar: no snapshot at ${inputFile}\n`);
   process.exit(2);
 }
 const out = arg('output', process.env.MAKEFUN_OUTPUT_DIR ?? '/output');
 
 const snapshot = parseSnapshot(readFileSync(inputFile, 'utf8'));
-const { board, radar } = buildRadar(snapshot);
-
+const { board, radar } = buildBoard(snapshot);
 const issue = boardIssue(board, snapshot);
 if (issue !== null) {
   process.stderr.write(`token radar: the model wrote a board the gate refuses: ${issue}\n`);
@@ -67,23 +62,20 @@ function copyFiles(from: string, to: string): string[] {
 copyFiles(join(here, 'dashboard'), join(out, 'dashboard'));
 const shots = copyFiles(join(here, 'screenshots'), join(out, 'screenshots'));
 if (shots.length < 3) {
-  process.stderr.write(`token radar: screenshots/ holds ${shots.length} image(s): hand in 3 (board, detail, filtered)\n`);
+  process.stderr.write(`token radar: screenshots/ holds ${shots.length} images\n`);
   process.exit(1);
 }
 for (const name of shots) {
   if (!IMAGE_NAME.test(name)) {
-    process.stderr.write(`token radar: screenshots/${name}: a name is letters, digits and . _ -, 1 to 128 characters\n`);
+    process.stderr.write(`token radar: screenshots/${name}: bad name\n`);
     process.exit(1);
   }
 }
 
-writeFileSync(
-  join(out, 'dossier.json'),
-  buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: DASHBOARD_CAPS }),
-);
+writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: { max_files: 400, max_bytes: 4_194_304 } }));
 
 process.stdout.write(
-  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} watchlist, ${radar.counts.ranked} ranked rows, ${radar.counts.live} live, ${radar.counts.products} products set aside\n` +
-    `token radar: comps fit R2=${radar.model.comps.r2.toFixed(3)} (n=${radar.model.comps.n_train}, kept=${radar.model.comps.n_kept}), held-out MAE=${radar.model.comps.cv_mae_log.toFixed(3)} log-mcap\n` +
-    `token radar: wrote board.json (${board.length} rows), data.js, dashboard/ and ${shots.length} screenshots, dossier.json\n`,
+  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored, ${radar.live_size} live set aside\n` +
+    `token radar: full-R2 ${radar.fit.full_r2.toFixed(4)}, 5-fold MAE ${radar.fit.cv5_mae.toFixed(4)}, walk-Jun MAE ${radar.fit.walk_jun_mae.toFixed(4)}\n` +
+    `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')}, ${join(out, 'screenshots')} and ${join(out, 'dossier.json')}\n`,
 );
