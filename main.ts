@@ -1,8 +1,8 @@
 // ============================================================================
-// token-radar-01 · main entrypoint
+// token-radar-01 · main entrypoint (v3, written fresh)
 // ----------------------------------------------------------------------------
-// Reads the sealed snapshot, scores every pre-token protocol with the fitted
-// model in lib/model.ts, writes board.json, data.js, copies dashboard/ and
+// Reads the sealed snapshot, fits the model in lib/model.ts, ranks the launch
+// candidates, writes board.json and data.js, copies dashboard/ and
 // screenshots/, and writes dossier.json last with the vendored library.
 //
 // Deterministic: no wall clock, no randomness, no network, no unordered
@@ -85,5 +85,6 @@ writeFileSync(
 process.stdout.write(
   `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} watchlist, ${radar.counts.ranked} ranked rows, ${radar.counts.live} live, ${radar.counts.products} products set aside\n` +
     `token radar: comps fit R2=${radar.model.comps.r2.toFixed(3)} (n=${radar.model.comps.n_train}, kept=${radar.model.comps.n_kept}), held-out MAE=${radar.model.comps.cv_mae_log.toFixed(3)} log-mcap\n` +
+    `token radar: token-odds logistic log-likelihood ${radar.model.odds.loglik_no_discount.toFixed(1)} with no discount vs ${radar.model.odds.loglik_half_life_730.toFixed(1)} at ${radar.model.odds.half_life_days}-day half-life\n` +
     `token radar: wrote board.json (${board.length} rows), data.js, dashboard/ and ${shots.length} screenshots, dossier.json\n`,
 );
