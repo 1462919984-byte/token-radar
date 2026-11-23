@@ -414,6 +414,7 @@
     if (!h) { render(); return; }
     var parts = h.split('&');
     var detailSlug = null;
+    var scrollTop = 0;
     parts.forEach(function (part) {
       var kv = part.split('=');
       var k = decodeURIComponent(kv[0]);
@@ -423,11 +424,14 @@
       else if (k === 'cat') state.cat = v;
       else if (k === 'wl') state.wl = v === '1';
       else if (k === 'tab') state.tab = v;
+      else if (k === 'scroll') scrollTop = Math.max(0, parseInt(v, 10) || 0);
     });
     render();
     if (detailSlug) {
       var row = DATA.rows.filter(function (r) { return r.slug === detailSlug; })[0];
       if (row) openDetail(row);
+      var panel = document.querySelector('.drawer .panel');
+      if (panel) panel.scrollTop = scrollTop;
     }
   }
   window.addEventListener('hashchange', applyHash);
